@@ -1,0 +1,62 @@
+{
+  "duration": 45,
+  "background": "assets/background.jpg",
+  "output": "outputs/background_video.mp4",
+  "mila_position": "center_lower",
+  "overlays": [
+    {
+      "start": 0,
+      "end": 4,
+      "type": "text",
+      "text": "200 views again?",
+      "position": "upper_center",
+      "style": "headline",
+      "animation": "fade"
+    },
+    {
+      "start": 5,
+      "end": 10,
+      "type": "text",
+      "text": "Before blaming the niche...",
+      "position": "upper_left",
+      "style": "support",
+      "animation": "fade"
+    },
+    {
+      "start": 11,
+      "end": 18,
+      "type": "text",
+      "text": "Check watch time first",
+      "position": "upper_right",
+      "style": "support",
+      "animation": "fade"
+    },
+    {
+      "start": 19,
+      "end": 27,
+      "type": "text",
+      "text": "Did they stay long enough?",
+      "position": "left_side",
+      "style": "support",
+      "animation": "slide"
+    },
+    {
+      "start": 28,
+      "end": 36,
+      "type": "text",
+      "text": "Maybe it's not the niche",
+      "position": "right_side",
+      "style": "support",
+      "animation": "slide"
+    },
+    {
+      "start": 37,
+      "end": 45,
+      "type": "teaser",
+      "text": "Where I would've left",
+      "position": "upper_center",
+      "style": "teaser",
+      "animation": "fade"
+    }
+  ]
+}
