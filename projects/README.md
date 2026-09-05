@@ -29,11 +29,16 @@ projects/video-002.json   -> outputs/video-002-background.mp4
                                  // for "text"/"teaser" this is accepted but ignored -- those are always
                                  // centred and confined to the top third of the frame. Still used by
                                  // image/screenshot/rect/arrow/circle overlays.
-      "style": "headline",      // headline | support | card | teaser | screenshot
-                                 // headline/support/teaser = transparent, outlined caption text (no box),
-                                 // set in Poppins (Bold/ExtraBold), not a plain system font.
-                                 // headline = main-hook size; support = accent-phrase size (~half of headline).
-                                 // card = the one boxed style, used by the "rect" overlay type.
+      "style": "headline",      // headline | support | teaser | card | screenshot
+                                 // Two allowed looks -- don't mix more into one video:
+                                 //   Editorial Hook (headline/support/teaser): soft serif (Fraunces),
+                                 //   warm cream/butter text, no box, no outline, subtle shadow only.
+                                 //   headline = main-hook size; support = accent-phrase size (~half);
+                                 //   teaser = a closing/next-video line (write "Next: ..." into the
+                                 //   text itself -- there's no separate tag/label element).
+                                 //   Analysis Card (card/screenshot): cream/beige rounded card,
+                                 //   charcoal Inter sans-serif text, thin accent bar. Used by "rect"
+                                 //   and "image"/"screenshot" overlays, for screenshots/numbers/analytics.
       "animation": "none"       // none (default -- pops on/off instantly) | fade | slide | pop
     }
   ]

@@ -19,11 +19,15 @@ No heavy app, no UI: you edit a small JSON file and run one Python script.
 - **30 fps**, silent (no audio track)
 - Duration: from your JSON (`"duration"`), default **45s**, hard-capped at
   **60s** unless you set `"allow_over_60": true`
-- Clean, warm, editorial look — bold, rounded captions (Poppins, a free
-  Google Font — not a "clinical" system sans) with a thin outline stroke on
-  a **transparent background** (no boxes behind the main text — sleek, not
-  "Canva soup"), warm cream/pale-yellow text, muted terracotta/dusty-blue/
-  olive accents, no neon, no sticker soup
+- Warm, calm, editorial look, built for a green-screened presenter in the
+  centre/lower-centre of frame — two overlay styles only, never mixed at
+  random:
+  - **Editorial Hook** (`text`/`teaser`) — large, soft serif (Fraunces),
+    warm cream/butter text straight over the footage, no box, no outline,
+    just a subtle shadow for readability. For emotional/positioning lines.
+  - **Analysis Card** (`rect`, and `image`/`screenshot`) — a cream/beige
+    rounded card, charcoal Inter sans-serif text, a thin muted accent bar.
+    For screenshots, numbers, analytics.
 - Captions are always **horizontally centred** and confined to the **top
   third** of the frame, so they never sit over your face/body
 - Overlays **pop on/off screen instantly** by default (no fade/slide
@@ -40,10 +44,11 @@ binary (via `imageio-ffmpeg`), so you don't need to separately install
 FFmpeg system-wide — this keeps the setup lightweight and works in Claude
 Code's cloud environment out of the box.
 
-Captions use **Poppins** (Bold/ExtraBold), a free Google Font (SIL Open
-Font License — no cost, no license to buy), bundled in `fonts/` so the
-look is consistent everywhere. If `fonts/` is ever removed, the generator
-falls back to the system's DejaVu Sans Bold automatically.
+Two free Google Fonts (SIL Open Font License — no cost, no license to buy)
+are bundled in `fonts/` so the look is consistent everywhere: **Fraunces**
+for Editorial Hook headlines, **Inter** for Analysis Card text. If `fonts/`
+is ever removed, the generator falls back to the system's DejaVu Serif
+Bold / DejaVu Sans Bold automatically.
 
 ## 2. Upload your assets
 
@@ -104,16 +109,19 @@ python3 generate_background.py projects/video-001.json --debug-safe-zones
 
 | type                | needs               | notes |
 |---------------------|---------------------|-------|
-| `text`              | `text`              | transparent, outlined caption — no box |
-| `teaser`            | `text`              | transparent caption + small "NEXT" tag, for an end-card teaser |
-| `image` / `screenshot` | `file`           | framed image/screenshot card |
-| `rect`              | `text` (optional)   | the one boxed option — a filled text card, or a flat colour rectangle |
+| `text`              | `text`              | Editorial Hook by default — soft serif, no box |
+| `teaser`            | `text`              | Editorial Hook, for a closing/next-video line (write "Next: ..." into the text itself — no separate tag) |
+| `image` / `screenshot` | `file`           | Analysis Card — framed image/screenshot |
+| `rect`              | `text` (optional)   | Analysis Card — a filled text card, or a flat colour rectangle |
 | `arrow`             | `direction` (optional) | simple accent arrow |
 | `circle`            | `size` (optional)   | simple accent circle/highlight |
 
-Styles: `headline` (main-hook size, transparent), `support` (accent-phrase
-size — about half the headline size, transparent), `teaser` (transparent),
-`card` (boxed, used only by `rect`), `screenshot`.
+Styles — each belongs to one of the two allowed looks (set on the
+overlay's `"style"`, independent of `"type"`, so any text overlay can be
+either): `headline` and `support` (Editorial Hook, serif — support is
+roughly half the headline size) and `teaser` (Editorial Hook, for closing
+lines) vs. `card` and `screenshot` (Analysis Card, boxed). Don't mix more
+than these two looks into one video.
 Animations: `none` (default — pops on/off screen instantly), `fade`, `slide`, `pop`.
 
 ## 4. Run the generator

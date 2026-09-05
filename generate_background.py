@@ -45,23 +45,64 @@ BOTTOM_SAFE = 0.80
 # and always centred -- clear of Mila's face/body in the middle/lower frame.
 TOP_THIRD = 1 / 3
 
-# Bundled fonts (fonts/, SIL Open Font License -- free, no paid fonts) give
-# a bold, rounded, social-media-style look instead of a "clinical" system
-# sans. Falls back to the system's DejaVu Sans Bold if the fonts/ folder
-# is ever removed, so the tool still runs with no extra setup.
+# Two bundled fonts (fonts/, both SIL Open Font License -- free, no paid
+# fonts), matching the two allowed overlay looks:
+#   - Fraunces (serif) for "Editorial Hook" lines -- warm, soft, premium,
+#     not a clinical grotesque, not a meme-caption font.
+#   - Inter (sans) for "Analysis Card" text -- clean and calm for
+#     screenshots/numbers/labels.
+# Both ship as single variable files; PIL selects a weight (and, for
+# Fraunces, optical size / softness) at render time. Each falls back to a
+# system font if fonts/ is ever removed, so the tool still runs with no
+# extra setup (weight/softness selection then has no effect).
 FONTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
-_SYSTEM_FALLBACK = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+_INTER_VARIABLE = os.path.join(FONTS_DIR, "Inter-Variable.ttf")
+_FRAUNCES_VARIABLE = os.path.join(FONTS_DIR, "Fraunces-Variable.ttf")
+_SANS_FALLBACK = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+_SERIF_FALLBACK = "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf"
 
 
-def _resolve_font(*candidates):
-    for path in candidates:
-        if path and os.path.isfile(path):
-            return path
-    return None
+def _pick_font_path(preferred, fallback):
+    if os.path.isfile(preferred):
+        return preferred, True
+    if os.path.isfile(fallback):
+        return fallback, False
+    return None, False
 
 
-FONT_HEADLINE = _resolve_font(os.path.join(FONTS_DIR, "Poppins-ExtraBold.ttf"), _SYSTEM_FALLBACK)
-FONT_BOLD = _resolve_font(os.path.join(FONTS_DIR, "Poppins-Bold.ttf"), _SYSTEM_FALLBACK)
+SANS_FONT_PATH, _SANS_IS_VARIABLE = _pick_font_path(_INTER_VARIABLE, _SANS_FALLBACK)
+SERIF_FONT_PATH, _SERIF_IS_VARIABLE = _pick_font_path(_FRAUNCES_VARIABLE, _SERIF_FALLBACK)
+
+
+def load_font(size, weight="SemiBold"):
+    """Load the Analysis Card sans font (Inter) at the given pixel size and
+    named weight (Medium / SemiBold / Bold)."""
+    if SANS_FONT_PATH is None:
+        return ImageFont.load_default()
+    font = ImageFont.truetype(SANS_FONT_PATH, size)
+    if _SANS_IS_VARIABLE:
+        try:
+            font.set_variation_by_name(weight)
+        except Exception:
+            pass
+    return font
+
+
+def load_serif_font(size, opsz=90, wght=560, soft=55, wonk=0):
+    """Load the Editorial Hook serif font (Fraunces) at the given pixel
+    size, dialing in its optical-size/weight/softness/wonky axes for a
+    warm, soft, premium-but-casual headline feel (not a novelty display
+    face). Axis selection has no effect when falling back to the system's
+    DejaVu Serif Bold."""
+    if SERIF_FONT_PATH is None:
+        return ImageFont.load_default()
+    font = ImageFont.truetype(SERIF_FONT_PATH, size)
+    if _SERIF_IS_VARIABLE:
+        try:
+            font.set_variation_by_axes([opsz, wght, soft, wonk])
+        except Exception:
+            pass
+    return font
 
 # ---------------------------------------------------------------------------
 # Colour palette -- warm / editorial, high-contrast, no neon.
@@ -75,6 +116,8 @@ OLIVE = (138, 154, 107, 255)
 BEIGE = (217, 201, 173, 255)
 PALE_YELLOW = (246, 226, 160, 255)
 PEACH = (243, 201, 165, 255)
+BUTTER = (250, 238, 205, 255)
+SHADOW_INK = (20, 16, 12)
 
 
 def _alpha(color, a):
@@ -86,32 +129,37 @@ def _alpha(color, a):
 # ---------------------------------------------------------------------------
 
 
-# "headline" / "support" / "teaser" are transparent, no-box captions: bold
-# text with a thin dark outline (stroke) for readability over any footage --
-# no filled card behind them. "headline" is the main-hook size; "support" is
-# the accent/secondary-phrase size (roughly half the headline's font size).
-# "card"/"rect" keeps an explicit filled box, for when you actually want a
-# rectangle/text-card shape (not a plain caption).
+# Two allowed overlay looks -- don't mix more styles into one video.
+#
+# Style A -- "Editorial Hook" (family="hook"): for emotional/positioning
+# lines. Large, soft serif (Fraunces), warm cream/butter text directly over
+# the footage -- no box, no outline, just a subtle soft shadow for
+# readability. "headline" is the main hook size; "support" is the smaller
+# accent/secondary-phrase size (roughly half); "teaser" is for a closing
+# line -- no separate tag/label, just styled as a hook line.
+#
+# Style B -- "Analysis Card" (family="card"): for screenshots, numbers,
+# analytics, creator examples. Cream/beige rounded card, charcoal Inter
+# sans-serif text, a thin muted accent bar, no heavy shadow.
 STYLES = {
     "headline": dict(
-        font=FONT_HEADLINE, font_size=92, text_color=CREAM,
-        stroke_color=CHARCOAL, stroke_width=5, accent=TERRACOTTA,
+        family="hook", opsz=90, wght=560, soft=55, font_size=100,
+        text_color=BUTTER,
     ),
     "support": dict(
-        font=FONT_BOLD, font_size=46, text_color=CREAM,
-        stroke_color=CHARCOAL, stroke_width=3, accent=DUSTY_BLUE,
+        family="hook", opsz=40, wght=520, soft=55, font_size=50,
+        text_color=BUTTER,
     ),
     "teaser": dict(
-        font=FONT_HEADLINE, font_size=66, text_color=PALE_YELLOW,
-        stroke_color=CHARCOAL, stroke_width=4, accent=OLIVE,
-        label="NEXT", label_color=OLIVE,
+        family="hook", opsz=64, wght=560, soft=55, font_size=76,
+        text_color=BUTTER,
     ),
     "card": dict(
-        font=FONT_BOLD, font_size=38, text_color=CHARCOAL,
-        box_color=_alpha(BEIGE, 215), accent=OLIVE, accent_w=8,
-        padding=(30, 20), radius=20,
+        family="card", weight="SemiBold", font_size=36, text_color=CHARCOAL,
+        box_color=_alpha(BEIGE, 225), accent=OLIVE, accent_w=6,
+        padding=(34, 24), radius=20,
     ),
-    "screenshot": dict(border_color=CREAM, border_width=14, radius=20),
+    "screenshot": dict(family="card", border_color=CREAM, border_width=14, radius=20),
 }
 
 # ---------------------------------------------------------------------------
@@ -189,86 +237,107 @@ def _wrap_text(text, font, max_width):
     return lines or [""]
 
 
-def render_text_card(text, style_name, max_width_px):
-    """Transparent, no-box caption: bold text with a thin outline stroke
-    for readability over any footage. Used for "text"/"teaser" overlays."""
-    style = STYLES.get(style_name, STYLES["support"])
-    font = ImageFont.truetype(style["font"], style["font_size"]) if style["font"] else ImageFont.load_default()
-    stroke_w = style.get("stroke_width", 0)
-    margin = stroke_w + 6
+# Soft drop-shadow tuning for Analysis Cards -- subtle, low-opacity, just
+# enough lift to read as a card rather than a flat sticker (never "heavy").
+_CARD_SHADOW_MARGIN = 18
+_CARD_SHADOW_OFFSET_Y = 6
+_CARD_SHADOW_BLUR = 8
+_CARD_SHADOW_COLOR = (20, 16, 12, 40)
 
-    usable_w = max(80, max_width_px - 2 * margin)
+
+def render_card_text(text, style_name, max_width_px):
+    """Style B -- Analysis Card: warm cream/beige rounded card, charcoal
+    Inter text, a thin muted accent bar, a bare-minimum shadow. For
+    screenshots/numbers/analytics -- used by the "rect" overlay type."""
+    style = STYLES.get(style_name, STYLES["card"])
+    font = load_font(style["font_size"], style.get("weight", "SemiBold"))
+    pad_x, pad_y = style.get("padding", (32, 22))
+    accent_w = style.get("accent_w", 6)
+
+    usable_w = max(80, max_width_px - 2 * pad_x - accent_w - 10)
     lines = _wrap_text(text, font, usable_w)
 
     ascent, descent = font.getmetrics()
     line_h = ascent + descent + 10
     max_line_w = max(font.getlength(line) for line in lines)
 
-    label = style.get("label")
-    label_h = 0
-    label_font = None
-    if label:
-        label_font = ImageFont.truetype(FONT_BOLD, max(18, style["font_size"] // 2)) if FONT_BOLD else ImageFont.load_default()
-        l_asc, l_desc = label_font.getmetrics()
-        label_h = l_asc + l_desc + 16
+    box_w = int(max_line_w + 2 * pad_x + accent_w + 10)
+    box_h = int(line_h * len(lines) + 2 * pad_y)
+    radius = style.get("radius", 20)
 
-    label_w = label_font.getlength(label) if label else 0
-    content_w = max(max_line_w, label_w)
-    card_w = int(content_w + 2 * margin)
-    card_h = int(line_h * len(lines) + label_h + 2 * margin)
+    m = _CARD_SHADOW_MARGIN
+    canvas_w = box_w + m * 2
+    canvas_h = box_h + m * 2 + _CARD_SHADOW_OFFSET_Y
 
-    card = Image.new("RGBA", (card_w, card_h), (0, 0, 0, 0))
+    shadow = Image.new("RGBA", (canvas_w, canvas_h), (0, 0, 0, 0))
+    sd = ImageDraw.Draw(shadow)
+    sd.rounded_rectangle([m, m + _CARD_SHADOW_OFFSET_Y, m + box_w, m + _CARD_SHADOW_OFFSET_Y + box_h],
+                          radius=radius, fill=_CARD_SHADOW_COLOR)
+    shadow = shadow.filter(ImageFilter.GaussianBlur(_CARD_SHADOW_BLUR))
+
+    card = shadow
     draw = ImageDraw.Draw(card)
+    draw.rounded_rectangle([m, m, m + box_w, m + box_h], radius=radius, fill=style["box_color"])
+    draw.rounded_rectangle([m, m, m + accent_w, m + box_h], radius=radius, fill=style["accent"])
 
-    # Every line -- and the label -- is horizontally centred within the
-    # card, so wrapped captions read as a proper centred block, not a
-    # ragged left edge.
-    cursor_y = margin
-    if label:
-        label_x = margin + (content_w - label_w) / 2
-        draw.text((label_x, cursor_y), label, font=label_font,
-                  fill=style.get("label_color", style["accent"]),
-                  stroke_width=max(2, stroke_w - 1), stroke_fill=style.get("stroke_color", CHARCOAL))
-        cursor_y += label_h
-
+    # Every line is horizontally centred within the card, so wrapped text
+    # reads as a proper centred block, not a ragged left edge.
+    text_x0 = m + accent_w + 10
+    cursor_y = m + pad_y
     for line in lines:
         line_w = font.getlength(line)
-        line_x = margin + (content_w - line_w) / 2
-        draw.text((line_x, cursor_y), line, font=font, fill=style["text_color"],
-                  stroke_width=stroke_w, stroke_fill=style.get("stroke_color", CHARCOAL))
+        line_x = text_x0 + (max_line_w - line_w) / 2
+        draw.text((line_x, cursor_y), line, font=font, fill=style["text_color"])
         cursor_y += line_h
 
     return card
 
 
-def render_boxed_text_card(text, style_name):
-    """Filled rounded-rectangle text card -- used only for the explicit
-    "rect" overlay type, when you actually want a card/box shape."""
-    style = STYLES.get(style_name, STYLES["card"])
-    font = ImageFont.truetype(style["font"], style["font_size"]) if style["font"] else ImageFont.load_default()
-    pad_x, pad_y = style.get("padding", (30, 20))
-    accent_w = style.get("accent_w", 8)
+# Soft-shadow tuning for Editorial Hook text -- a tight, subtle contact
+# shadow just for readability, not a card-style drop shadow.
+_HOOK_SHADOW_OFFSET_Y = 3
+_HOOK_SHADOW_BLUR = 5
+_HOOK_SHADOW_ALPHA = 130
 
-    usable_w = max(80, 0.8 * WIDTH - 2 * pad_x - accent_w - 10)
+
+def render_hook_text(text, style_name, max_width_px):
+    """Style A -- Editorial Hook: large, soft serif (Fraunces), warm
+    cream/butter text straight over the footage -- no box, no outline.
+    For emotional/positioning lines -- used by "text" and "teaser"
+    overlays."""
+    style = STYLES.get(style_name, STYLES["headline"])
+    font = load_serif_font(style["font_size"], style.get("opsz", 90),
+                            style.get("wght", 560), style.get("soft", 55))
+    margin = 16
+
+    usable_w = max(80, max_width_px - 2 * margin)
     lines = _wrap_text(text, font, usable_w)
 
     ascent, descent = font.getmetrics()
-    line_h = ascent + descent + 8
+    line_h = ascent + descent + 14
     max_line_w = max(font.getlength(line) for line in lines)
 
-    card_w = int(max_line_w + 2 * pad_x + accent_w + 10)
-    card_h = int(line_h * len(lines) + 2 * pad_y)
+    canvas_w = int(max_line_w + 2 * margin)
+    canvas_h = int(line_h * len(lines) + 2 * margin + _HOOK_SHADOW_OFFSET_Y)
 
-    card = Image.new("RGBA", (card_w, card_h), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(card)
-    radius = style.get("radius", 20)
-    draw.rounded_rectangle([0, 0, card_w - 1, card_h - 1], radius=radius, fill=style["box_color"])
-    draw.rounded_rectangle([0, 0, accent_w, card_h - 1], radius=radius, fill=style["accent"])
-
-    cursor_y = pad_y
-    text_x = pad_x + accent_w + 10
+    shadow = Image.new("RGBA", (canvas_w, canvas_h), (0, 0, 0, 0))
+    sd = ImageDraw.Draw(shadow)
+    cursor_y = margin
     for line in lines:
-        draw.text((text_x, cursor_y), line, font=font, fill=style["text_color"])
+        line_w = font.getlength(line)
+        line_x = margin + (max_line_w - line_w) / 2
+        sd.text((line_x, cursor_y + _HOOK_SHADOW_OFFSET_Y), line, font=font,
+                 fill=(*SHADOW_INK, _HOOK_SHADOW_ALPHA))
+        cursor_y += line_h
+    shadow = shadow.filter(ImageFilter.GaussianBlur(_HOOK_SHADOW_BLUR))
+
+    card = shadow
+    draw = ImageDraw.Draw(card)
+    cursor_y = margin
+    for line in lines:
+        line_w = font.getlength(line)
+        line_x = margin + (max_line_w - line_w) / 2
+        draw.text((line_x, cursor_y), line, font=font, fill=style["text_color"])
         cursor_y += line_h
 
     return card
@@ -344,9 +413,8 @@ def render_safe_zone_guide(mila_position):
     d.rectangle([int(WIDTH * 0.2), center_top, int(WIDTH * 0.8), center_bottom],
                 outline=(60, 90, 160, 220), width=6)
 
-    if FONT_BOLD:
-        d.text((16, top_h + 10), "SAFE ZONE GUIDE (debug)", font=ImageFont.truetype(FONT_BOLD, 28),
-                fill=(255, 255, 255, 230))
+    d.text((16, top_h + 10), "SAFE ZONE GUIDE (debug)", font=load_font(28, "SemiBold"),
+            fill=(255, 255, 255, 230))
     return img
 
 
@@ -475,18 +543,25 @@ def build_overlay_clip(ov, idx, total_duration):
     )
     style_name = ov.get("style", default_style)
 
+    # Dispatch by the resolved style's family: "hook" -> Style A (Editorial
+    # Hook, no box), "card" -> Style B (Analysis Card, boxed). This is a
+    # per-overlay choice via "style", not hard-wired to "type".
+    def _render_by_family(text, style_name):
+        family = STYLES.get(style_name, STYLES["support"]).get("family", "hook")
+        return render_card_text(text, style_name, max_w_px) if family == "card" else render_hook_text(text, style_name, max_w_px)
+
     if otype == "text":
         text = ov.get("text", "")
         if not text:
             print(f"[warn] overlay #{idx + 1} (text) has no 'text'; skipping")
             return None
-        card = render_text_card(text, style_name, max_w_px)
+        card = _render_by_family(text, style_name)
     elif otype == "teaser":
         text = ov.get("text", "")
         if not text:
             print(f"[warn] overlay #{idx + 1} (teaser) has no 'text'; skipping")
             return None
-        card = render_text_card(text, "teaser", max_w_px)
+        card = _render_by_family(text, style_name)
     elif otype in ("image", "screenshot"):
         file_path = ov.get("file")
         if not file_path or not os.path.isfile(file_path):
@@ -496,7 +571,7 @@ def build_overlay_clip(ov, idx, total_duration):
         card = render_image_card(file_path, style_name, max_w_px, max_h_px)
     elif otype == "rect":
         text = ov.get("text")
-        card = render_boxed_text_card(text, style_name) if text else render_plain_rect(ov, style_name)
+        card = _render_by_family(text, style_name) if text else render_plain_rect(ov, style_name)
     elif otype == "arrow":
         card = render_arrow(ov.get("direction", "down_left"), STYLES.get(style_name, STYLES["support"])["accent"])
     elif otype == "circle":
