@@ -1,6 +1,6 @@
 {
   "duration": 45,
-  "background": "assets/background.jpg",
+  "background": "assets/background.png",
   "output": "outputs/background_video.mp4",
   "mila_position": "center_lower",
   "overlays": [
