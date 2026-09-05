@@ -41,13 +41,27 @@ HARD_CAP_SECONDS = 60
 TOP_SAFE = 0.10
 BOTTOM_SAFE = 0.80
 
-FONT_DIR = "/usr/share/fonts/truetype/dejavu"
-FONT_BOLD = os.path.join(FONT_DIR, "DejaVuSans-Bold.ttf")
-FONT_REGULAR = os.path.join(FONT_DIR, "DejaVuSans.ttf")
-if not os.path.isfile(FONT_BOLD):
-    # Fall back to whatever PIL's default bitmap font provides rather than
-    # crashing on machines without DejaVu installed.
-    FONT_BOLD = FONT_REGULAR = None
+# Main hook / accent captions are confined to the top third of the frame
+# and always centred -- clear of Mila's face/body in the middle/lower frame.
+TOP_THIRD = 1 / 3
+
+# Bundled fonts (fonts/, SIL Open Font License -- free, no paid fonts) give
+# a bold, rounded, social-media-style look instead of a "clinical" system
+# sans. Falls back to the system's DejaVu Sans Bold if the fonts/ folder
+# is ever removed, so the tool still runs with no extra setup.
+FONTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
+_SYSTEM_FALLBACK = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+
+
+def _resolve_font(*candidates):
+    for path in candidates:
+        if path and os.path.isfile(path):
+            return path
+    return None
+
+
+FONT_HEADLINE = _resolve_font(os.path.join(FONTS_DIR, "Poppins-ExtraBold.ttf"), _SYSTEM_FALLBACK)
+FONT_BOLD = _resolve_font(os.path.join(FONTS_DIR, "Poppins-Bold.ttf"), _SYSTEM_FALLBACK)
 
 # ---------------------------------------------------------------------------
 # Colour palette -- warm / editorial, high-contrast, no neon.
@@ -80,7 +94,7 @@ def _alpha(color, a):
 # rectangle/text-card shape (not a plain caption).
 STYLES = {
     "headline": dict(
-        font=FONT_BOLD, font_size=92, text_color=CREAM,
+        font=FONT_HEADLINE, font_size=92, text_color=CREAM,
         stroke_color=CHARCOAL, stroke_width=5, accent=TERRACOTTA,
     ),
     "support": dict(
@@ -88,7 +102,7 @@ STYLES = {
         stroke_color=CHARCOAL, stroke_width=3, accent=DUSTY_BLUE,
     ),
     "teaser": dict(
-        font=FONT_BOLD, font_size=66, text_color=PALE_YELLOW,
+        font=FONT_HEADLINE, font_size=66, text_color=PALE_YELLOW,
         stroke_color=CHARCOAL, stroke_width=4, accent=OLIVE,
         label="NEXT", label_color=OLIVE,
     ),
@@ -144,6 +158,18 @@ def compute_placement(position_key, card_w, card_h):
     return int(x), int(y)
 
 
+def caption_placement(card_w, card_h):
+    """Placement for plain captions ("text"/"teaser" overlays): always
+    horizontally centred, and always confined to the top third of the
+    frame so it never sits over Mila's face/body in the middle/lower
+    frame."""
+    x = max(16, (WIDTH - card_w) / 2)
+    min_y = TOP_SAFE * HEIGHT + 10
+    max_y = TOP_THIRD * HEIGHT - card_h - 10
+    y = max(min_y, min(TOP_SAFE * HEIGHT + 30, max_y))
+    return int(x), int(y)
+
+
 # ---------------------------------------------------------------------------
 # Text card rendering
 # ---------------------------------------------------------------------------
@@ -186,21 +212,29 @@ def render_text_card(text, style_name, max_width_px):
         l_asc, l_desc = label_font.getmetrics()
         label_h = l_asc + l_desc + 16
 
-    card_w = int(max(max_line_w, label_font.getlength(label) if label else 0) + 2 * margin)
+    label_w = label_font.getlength(label) if label else 0
+    content_w = max(max_line_w, label_w)
+    card_w = int(content_w + 2 * margin)
     card_h = int(line_h * len(lines) + label_h + 2 * margin)
 
     card = Image.new("RGBA", (card_w, card_h), (0, 0, 0, 0))
     draw = ImageDraw.Draw(card)
 
+    # Every line -- and the label -- is horizontally centred within the
+    # card, so wrapped captions read as a proper centred block, not a
+    # ragged left edge.
     cursor_y = margin
     if label:
-        draw.text((margin, cursor_y), label, font=label_font,
+        label_x = margin + (content_w - label_w) / 2
+        draw.text((label_x, cursor_y), label, font=label_font,
                   fill=style.get("label_color", style["accent"]),
                   stroke_width=max(2, stroke_w - 1), stroke_fill=style.get("stroke_color", CHARCOAL))
         cursor_y += label_h
 
     for line in lines:
-        draw.text((margin, cursor_y), line, font=font, fill=style["text_color"],
+        line_w = font.getlength(line)
+        line_x = margin + (content_w - line_w) / 2
+        draw.text((line_x, cursor_y), line, font=font, fill=style["text_color"],
                   stroke_width=stroke_w, stroke_fill=style.get("stroke_color", CHARCOAL))
         cursor_y += line_h
 
@@ -427,7 +461,10 @@ def build_overlay_clip(ov, idx, total_duration):
     if position not in POSITIONS:
         print(f"[warn] overlay #{idx + 1} has unknown position '{position}'; using 'upper_center'")
         position = "upper_center"
-    pos_cfg = POSITIONS[position]
+    is_caption = otype in ("text", "teaser")
+    # Plain captions are always centred, full-width, top-third -- "position"
+    # is accepted for JSON/back-compat but doesn't affect caption placement.
+    pos_cfg = POSITIONS["upper_center"] if is_caption else POSITIONS[position]
     max_w_px = pos_cfg["max_w_frac"] * WIDTH
 
     default_style = (
@@ -469,11 +506,13 @@ def build_overlay_clip(ov, idx, total_duration):
         return None
 
     card_w, card_h = card.size
-    x, y = compute_placement(position, card_w, card_h)
+    x, y = caption_placement(card_w, card_h) if is_caption else compute_placement(position, card_w, card_h)
 
     clip = ImageClip(np.array(card)).with_duration(dur).with_start(start).with_position((x, y))
 
-    anim = ov.get("animation", "fade")
+    # Overlays pop on/off screen instantly by default -- no fade/slide creep.
+    # Set "animation" explicitly in the JSON if you want fade/slide/pop.
+    anim = ov.get("animation", "none")
     anim_dur = min(0.4, dur / 3) if dur > 0 else 0.2
     if anim == "none":
         pass
@@ -481,7 +520,7 @@ def build_overlay_clip(ov, idx, total_duration):
         side = _SLIDE_SIDE_BY_POSITION.get(position, "top")
         clip = apply_slide(clip, x, y, side, anim_dur)
         clip = clip.with_effects([vfx.CrossFadeIn(anim_dur), vfx.CrossFadeOut(anim_dur)])
-    else:  # "fade" / "pop" / anything else -> simple, reliable fade
+    else:  # "fade" / "pop" -> simple, reliable fade
         fade_dur = anim_dur * 0.6 if anim == "pop" else anim_dur
         clip = clip.with_effects([vfx.CrossFadeIn(fade_dur), vfx.CrossFadeOut(fade_dur)])
 

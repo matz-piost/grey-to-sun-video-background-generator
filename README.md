@@ -19,10 +19,15 @@ No heavy app, no UI: you edit a small JSON file and run one Python script.
 - **30 fps**, silent (no audio track)
 - Duration: from your JSON (`"duration"`), default **45s**, hard-capped at
   **60s** unless you set `"allow_over_60": true`
-- Clean, warm, editorial look — bold sans-serif captions with a thin
-  outline stroke on a **transparent background** (no boxes behind the main
-  text — sleek, not "Canva soup"), warm cream/pale-yellow text, muted
-  terracotta/dusty-blue/olive accents, no neon, no sticker soup
+- Clean, warm, editorial look — bold, rounded captions (Poppins, a free
+  Google Font — not a "clinical" system sans) with a thin outline stroke on
+  a **transparent background** (no boxes behind the main text — sleek, not
+  "Canva soup"), warm cream/pale-yellow text, muted terracotta/dusty-blue/
+  olive accents, no neon, no sticker soup
+- Captions are always **horizontally centred** and confined to the **top
+  third** of the frame, so they never sit over your face/body
+- Overlays **pop on/off screen instantly** by default (no fade/slide
+  creep) — set `"animation"` explicitly per overlay if you want one
 
 ## 1. Install dependencies
 
@@ -34,6 +39,11 @@ This installs MoviePy, Pillow and NumPy. MoviePy bundles its own FFmpeg
 binary (via `imageio-ffmpeg`), so you don't need to separately install
 FFmpeg system-wide — this keeps the setup lightweight and works in Claude
 Code's cloud environment out of the box.
+
+Captions use **Poppins** (Bold/ExtraBold), a free Google Font (SIL Open
+Font License — no cost, no license to buy), bundled in `fonts/` so the
+look is consistent everywhere. If `fonts/` is ever removed, the generator
+falls back to the system's DejaVu Sans Bold automatically.
 
 ## 2. Upload your assets
 
@@ -77,11 +87,14 @@ field reference: `projects/README.md`.
 
 ### Safe zones (built in)
 
-Every overlay position is automatically clamped so it never lands in the
-top 10% of the frame (platform UI) or the bottom 20% (captions / UI). Use
-`upper_center`, `upper_left`, `upper_right`, `left_side`, or `right_side`
-to keep overlays around your head/shoulders and out of the centre, where
-your body/face will be. Preview the safe zones before recording:
+Plain captions (`text` / `teaser` overlays) are always **centred** and
+confined to the **top third** of the frame — they never land in the top
+10% (platform UI) or drop down over your face/body in the middle/lower
+frame. The `"position"` field is accepted for these but doesn't change
+their placement; it's still used for `image`/`screenshot`/`rect`/`arrow`/
+`circle` overlays, where `upper_center`, `upper_left`, `upper_right`,
+`left_side`, or `right_side` keep them around your head/shoulders and out
+of the centre. Preview the safe zones before recording:
 
 ```bash
 python3 generate_background.py projects/video-001.json --debug-safe-zones
@@ -101,7 +114,7 @@ python3 generate_background.py projects/video-001.json --debug-safe-zones
 Styles: `headline` (main-hook size, transparent), `support` (accent-phrase
 size — about half the headline size, transparent), `teaser` (transparent),
 `card` (boxed, used only by `rect`), `screenshot`.
-Animations: `fade` (default), `slide`, `pop`, `none`.
+Animations: `none` (default — pops on/off screen instantly), `fade`, `slide`, `pop`.
 
 ## 4. Run the generator
 

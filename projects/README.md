@@ -26,11 +26,15 @@ projects/video-002.json   -> outputs/video-002-background.mp4
       "type": "text",           // text | teaser | image | screenshot | rect | arrow | circle
       "text": "200 views again?",
       "position": "upper_center", // upper_center|upper_left|upper_right|left_side|right_side|lower_left|lower_right|lower_center
+                                 // for "text"/"teaser" this is accepted but ignored -- those are always
+                                 // centred and confined to the top third of the frame. Still used by
+                                 // image/screenshot/rect/arrow/circle overlays.
       "style": "headline",      // headline | support | card | teaser | screenshot
-                                 // headline/support/teaser = transparent, outlined caption text (no box).
+                                 // headline/support/teaser = transparent, outlined caption text (no box),
+                                 // set in Poppins (Bold/ExtraBold), not a plain system font.
                                  // headline = main-hook size; support = accent-phrase size (~half of headline).
                                  // card = the one boxed style, used by the "rect" overlay type.
-      "animation": "fade"       // fade | slide | pop | none
+      "animation": "none"       // none (default -- pops on/off instantly) | fade | slide | pop
     }
   ]
 }
