@@ -58,6 +58,7 @@ TOP_THIRD = 1 / 3
 FONTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
 _INTER_VARIABLE = os.path.join(FONTS_DIR, "Inter-Variable.ttf")
 _FRAUNCES_VARIABLE = os.path.join(FONTS_DIR, "Fraunces-Variable.ttf")
+_CAVEAT_VARIABLE = os.path.join(FONTS_DIR, "Caveat-Variable.ttf")
 _SANS_FALLBACK = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 _SERIF_FALLBACK = "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf"
 
@@ -72,6 +73,9 @@ def _pick_font_path(preferred, fallback):
 
 SANS_FONT_PATH, _SANS_IS_VARIABLE = _pick_font_path(_INTER_VARIABLE, _SANS_FALLBACK)
 SERIF_FONT_PATH, _SERIF_IS_VARIABLE = _pick_font_path(_FRAUNCES_VARIABLE, _SERIF_FALLBACK)
+# Caveat falls back to the serif face (not a real handwriting look, but
+# keeps the "sticky" demo style from crashing if fonts/ is ever removed).
+HAND_FONT_PATH, _HAND_IS_VARIABLE = _pick_font_path(_CAVEAT_VARIABLE, _SERIF_FALLBACK)
 
 
 def load_font(size, weight="SemiBold"):
@@ -100,6 +104,20 @@ def load_serif_font(size, opsz=90, wght=560, soft=55, wonk=0):
     if _SERIF_IS_VARIABLE:
         try:
             font.set_variation_by_axes([opsz, wght, soft, wonk])
+        except Exception:
+            pass
+    return font
+
+
+def load_hand_font(size, weight="Bold"):
+    """Load the handwriting font (Caveat) used only by the "sticky" demo
+    style -- not part of the two standard production looks."""
+    if HAND_FONT_PATH is None:
+        return ImageFont.load_default()
+    font = ImageFont.truetype(HAND_FONT_PATH, size)
+    if _HAND_IS_VARIABLE:
+        try:
+            font.set_variation_by_name(weight)
         except Exception:
             pass
     return font
@@ -160,6 +178,14 @@ STYLES = {
         padding=(34, 24), radius=20,
     ),
     "screenshot": dict(family="card", border_color=CREAM, border_width=14, radius=20),
+    # "sticky" -- a one-off DEMO style, not part of the two production
+    # looks above: a handwritten (Caveat) word on a torn/taped paper
+    # square. Use sparingly, for a single deliberate beat, via the "rect"
+    # overlay type with "style": "sticky" -- never as a default look.
+    "sticky": dict(
+        family="sticky", font_size=64, text_color=(40, 33, 26, 255),
+        paper_color=PALE_YELLOW, tape_color=_alpha(CREAM, 210),
+    ),
 }
 
 # ---------------------------------------------------------------------------
@@ -291,6 +317,91 @@ def render_card_text(text, style_name, max_width_px):
         cursor_y += line_h
 
     return card
+
+
+# Shadow/tape tuning for the "sticky" demo style.
+_STICKY_SHADOW_MARGIN = 22
+_STICKY_SHADOW_OFFSET = 8
+_STICKY_SHADOW_BLUR = 10
+_STICKY_SHADOW_COLOR = (20, 16, 12, 75)
+
+# A default hand-placed tilt per overlay index, used when an overlay
+# doesn't set its own "rotation" -- gives a row of sticky notes a natural,
+# not-quite-straight look without needing randomness.
+_STICKY_WOBBLE = [-5, 4, -3, 6, -4, 3]
+
+
+def _sticky_rotation(ov, idx):
+    if "rotation" in ov:
+        try:
+            return float(ov["rotation"])
+        except (TypeError, ValueError):
+            pass
+    return _STICKY_WOBBLE[idx % len(_STICKY_WOBBLE)]
+
+
+def render_sticky_note(text, style_name, max_width_px, rotation=0.0):
+    """DEMO style -- a handwritten word on a square of paper: masking tape
+    across the top, a lifted corner, and a slight hand-placed tilt. Kept
+    separate from the two allowed production looks (Editorial Hook /
+    Analysis Card) -- use for one deliberate beat, via the "rect" overlay
+    type with "style": "sticky"."""
+    style = STYLES.get(style_name, STYLES["sticky"])
+    font = load_hand_font(style["font_size"])
+    pad = 44
+
+    usable_w = max(80, min(max_width_px, 460) - 2 * pad)
+    lines = _wrap_text(text, font, usable_w)
+
+    ascent, descent = font.getmetrics()
+    line_h = ascent + descent + 4
+    max_line_w = max(font.getlength(line) for line in lines)
+
+    note_w = int(max(max_line_w + 2 * pad, 240))
+    note_h = int(max(line_h * len(lines) + 2 * pad, note_w * 0.85))
+
+    m = _STICKY_SHADOW_MARGIN
+    canvas_w = note_w + m * 2
+    canvas_h = note_h + m * 2 + _STICKY_SHADOW_OFFSET
+
+    note = Image.new("RGBA", (canvas_w, canvas_h), (0, 0, 0, 0))
+    sd = ImageDraw.Draw(note)
+    sd.rectangle([m, m + _STICKY_SHADOW_OFFSET, m + note_w, m + _STICKY_SHADOW_OFFSET + note_h],
+                 fill=_STICKY_SHADOW_COLOR)
+    note = note.filter(ImageFilter.GaussianBlur(_STICKY_SHADOW_BLUR))
+
+    draw = ImageDraw.Draw(note)
+    paper = style.get("paper_color", PALE_YELLOW)
+    draw.rectangle([m, m, m + note_w, m + note_h], fill=paper)
+
+    # Lifted corner -- a small darker triangle peeling off the bottom-right,
+    # with a thin bright fold-line, so it doesn't read as a flat sticker.
+    peel = 30
+    x0, y0 = m + note_w, m + note_h
+    peel_shade = tuple(max(0, c - 45) for c in paper[:3]) + (255,)
+    draw.polygon([(x0 - peel, y0), (x0, y0), (x0, y0 - peel)], fill=peel_shade)
+    draw.line([(x0 - peel, y0), (x0, y0 - peel)], fill=(255, 255, 255, 130), width=2)
+
+    # A strip of masking tape across the top, tilted a few degrees off the
+    # note itself.
+    tape_w, tape_h = int(note_w * 0.42), 34
+    tape = Image.new("RGBA", (tape_w, tape_h), style.get("tape_color", _alpha(CREAM, 210)))
+    tape = tape.rotate(-3, expand=True, resample=Image.BICUBIC)
+    tape_cx, tape_cy = m + note_w / 2, m
+    note.alpha_composite(tape, (int(tape_cx - tape.width / 2), int(tape_cy - tape.height / 2)))
+
+    # Handwritten text, centred on the note.
+    text_color = style.get("text_color", CHARCOAL)
+    cursor_y = m + (note_h - line_h * len(lines)) / 2
+    for line in lines:
+        line_w = font.getlength(line)
+        line_x = m + (note_w - line_w) / 2
+        draw.text((line_x, cursor_y), line, font=font, fill=text_color)
+        cursor_y += line_h
+
+    if rotation:
+        note = note.rotate(rotation, expand=True, resample=Image.BICUBIC)
+    return note
 
 
 # Soft-shadow tuning for Editorial Hook text -- a tight, subtle contact
@@ -544,11 +655,16 @@ def build_overlay_clip(ov, idx, total_duration):
     style_name = ov.get("style", default_style)
 
     # Dispatch by the resolved style's family: "hook" -> Style A (Editorial
-    # Hook, no box), "card" -> Style B (Analysis Card, boxed). This is a
-    # per-overlay choice via "style", not hard-wired to "type".
+    # Hook, no box), "card" -> Style B (Analysis Card, boxed), "sticky" ->
+    # the one-off handwritten demo look. This is a per-overlay choice via
+    # "style", not hard-wired to "type".
     def _render_by_family(text, style_name):
         family = STYLES.get(style_name, STYLES["support"]).get("family", "hook")
-        return render_card_text(text, style_name, max_w_px) if family == "card" else render_hook_text(text, style_name, max_w_px)
+        if family == "card":
+            return render_card_text(text, style_name, max_w_px)
+        if family == "sticky":
+            return render_sticky_note(text, style_name, max_w_px, rotation=_sticky_rotation(ov, idx))
+        return render_hook_text(text, style_name, max_w_px)
 
     if otype == "text":
         text = ov.get("text", "")

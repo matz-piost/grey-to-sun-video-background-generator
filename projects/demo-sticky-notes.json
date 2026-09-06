@@ -1,0 +1,16 @@
+{
+  "duration": 20,
+  "background": "assets/background.png",
+  "output": "outputs/demo-sticky-notes.mp4",
+  "mila_position": "center_lower",
+  "overlays": [
+    { "start": 0, "end": 4, "type": "text", "text": "Check watch time first",
+      "position": "upper_center", "style": "headline" },
+    { "start": 13, "end": 19, "type": "rect", "text": "CHECK",
+      "position": "upper_left", "style": "sticky" },
+    { "start": 15, "end": 19, "type": "rect", "text": "WATCH TIME",
+      "position": "left_side", "style": "sticky" },
+    { "start": 17, "end": 19, "type": "rect", "text": "FIRST",
+      "position": "lower_left", "style": "sticky" }
+  ]
+}

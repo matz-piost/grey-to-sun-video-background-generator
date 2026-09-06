@@ -124,6 +124,16 @@ lines) vs. `card` and `screenshot` (Analysis Card, boxed). Don't mix more
 than these two looks into one video.
 Animations: `none` (default — pops on/off screen instantly), `fade`, `slide`, `pop`.
 
+### Bonus: one-off styles (use sparingly)
+
+Beyond the two production looks above, `"style": "sticky"` (on a `rect`
+overlay with `"text"`) renders a handwritten word on a taped, torn-corner
+paper square — for a single deliberate beat, not a default look. See
+`projects/demo-sticky-notes.json` / `outputs/demo-sticky-notes.mp4` for a
+"list builds up one word at a time" example: three sticky notes appear in
+sequence (13s, 15s, 17s) and stay on screen, stacked down the left edge,
+timed to when each word is spoken.
+
 ## 4. Run the generator
 
 ```bash
