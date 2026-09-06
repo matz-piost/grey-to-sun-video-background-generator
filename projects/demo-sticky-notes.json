@@ -9,8 +9,8 @@
     { "start": 13, "end": 19, "type": "rect", "text": "CHECK",
       "position": "upper_left", "style": "sticky" },
     { "start": 15, "end": 19, "type": "rect", "text": "WATCH TIME",
-      "position": "left_side", "style": "sticky" },
+      "position": "upper_center", "style": "sticky" },
     { "start": 17, "end": 19, "type": "rect", "text": "FIRST",
-      "position": "lower_left", "style": "sticky" }
+      "position": "upper_right", "style": "sticky" }
   ]
 }

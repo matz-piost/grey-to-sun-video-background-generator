@@ -36,13 +36,14 @@ FPS = 30
 DEFAULT_DURATION = 45
 HARD_CAP_SECONDS = 60
 
-# Safe zones (fractions of frame height) -- keep essential overlays out of
-# the very top (platform UI) and the bottom ~20% (captions / UI).
+# Safe zone (fraction of frame height) -- keep overlays out of the very
+# top strip too (platform UI: username, follow button, etc).
 TOP_SAFE = 0.10
-BOTTOM_SAFE = 0.80
 
-# Main hook / accent captions are confined to the top third of the frame
-# and always centred -- clear of Mila's face/body in the middle/lower frame.
+# HARD RULE, applies to every overlay of every type: the presenter occupies
+# the middle/lower two-thirds of frame, so overlays are confined to the top
+# third only -- never below this line. See compute_placement() and
+# caption_placement().
 TOP_THIRD = 1 / 3
 
 # Two bundled fonts (fonts/, both SIL Open Font License -- free, no paid
@@ -182,31 +183,44 @@ STYLES = {
     # looks above: a handwritten (Caveat) word on a torn/taped paper
     # square. Use sparingly, for a single deliberate beat, via the "rect"
     # overlay type with "style": "sticky" -- never as a default look.
+    # Sized to actually fit the top-third-only overlay zone -- multiple
+    # sticky notes need to fit in a ~450px-tall band, so keep these small.
     "sticky": dict(
-        family="sticky", font_size=64, text_color=(40, 33, 26, 255),
+        family="sticky", font_size=42, text_color=(40, 33, 26, 255),
         paper_color=PALE_YELLOW, tape_color=_alpha(CREAM, 210),
     ),
 }
 
 # ---------------------------------------------------------------------------
 # Safe-zone overlay positions (all fractions are of the 1080x1920 frame).
-# Every position is clamped at render time so it never lands in the top
-# 10% or bottom 20% of the frame, no matter what's configured.
+#
+# HARD RULE: every overlay of every type lands in the top third of the
+# frame, full stop -- the presenter occupies the middle/lower two-thirds,
+# so nothing is ever allowed to land there. compute_placement() below
+# clamps to this no matter what "position"/card size is configured. The
+# position names below are now rows/columns *within* that top third
+# (top / upper-middle / lower-middle of the top third), not regions of the
+# whole frame -- "left_side" and "lower_left" no longer mean the middle or
+# bottom of the screen.
 # ---------------------------------------------------------------------------
 
 POSITIONS = {
-    "upper_center": dict(x_frac=0.50, y_frac=0.16, halign="center", valign="top", max_w_frac=0.86),
-    "upper_left": dict(x_frac=0.06, y_frac=0.16, halign="left", valign="top", max_w_frac=0.55),
-    "upper_right": dict(x_frac=0.94, y_frac=0.16, halign="right", valign="top", max_w_frac=0.55),
-    "left_side": dict(x_frac=0.06, y_frac=0.42, halign="left", valign="center", max_w_frac=0.46),
-    "right_side": dict(x_frac=0.94, y_frac=0.42, halign="right", valign="center", max_w_frac=0.46),
-    "lower_left": dict(x_frac=0.06, y_frac=0.74, halign="left", valign="bottom", max_w_frac=0.55),
-    "lower_right": dict(x_frac=0.94, y_frac=0.74, halign="right", valign="bottom", max_w_frac=0.55),
-    "lower_center": dict(x_frac=0.50, y_frac=0.74, halign="center", valign="bottom", max_w_frac=0.70),
+    "upper_center": dict(x_frac=0.50, y_frac=0.14, halign="center", valign="top", max_w_frac=0.86),
+    "upper_left": dict(x_frac=0.06, y_frac=0.14, halign="left", valign="top", max_w_frac=0.55),
+    "upper_right": dict(x_frac=0.94, y_frac=0.14, halign="right", valign="top", max_w_frac=0.55),
+    "left_side": dict(x_frac=0.06, y_frac=0.21, halign="left", valign="center", max_w_frac=0.46),
+    "right_side": dict(x_frac=0.94, y_frac=0.21, halign="right", valign="center", max_w_frac=0.46),
+    "lower_left": dict(x_frac=0.06, y_frac=0.28, halign="left", valign="bottom", max_w_frac=0.55),
+    "lower_right": dict(x_frac=0.94, y_frac=0.28, halign="right", valign="bottom", max_w_frac=0.55),
+    "lower_center": dict(x_frac=0.50, y_frac=0.28, halign="center", valign="bottom", max_w_frac=0.70),
 }
 
 
 def compute_placement(position_key, card_w, card_h):
+    """Placement for non-caption overlays (image/screenshot/rect/arrow/
+    circle/sticky). Clamped to the top third of the frame -- same hard
+    limit as captions -- since the presenter occupies the middle/lower
+    two-thirds and no overlay of any type is ever allowed to land there."""
     pos = POSITIONS.get(position_key, POSITIONS["upper_center"])
     anchor_x = pos["x_frac"] * WIDTH
     anchor_y = pos["y_frac"] * HEIGHT
@@ -227,7 +241,7 @@ def compute_placement(position_key, card_w, card_h):
 
     x = max(16, min(x, WIDTH - card_w - 16))
     min_y = TOP_SAFE * HEIGHT + 10
-    max_y = BOTTOM_SAFE * HEIGHT - card_h - 10
+    max_y = TOP_THIRD * HEIGHT - card_h - 10
     y = max(min_y, min(y, max_y))
     return int(x), int(y)
 
@@ -319,10 +333,12 @@ def render_card_text(text, style_name, max_width_px):
     return card
 
 
-# Shadow/tape tuning for the "sticky" demo style.
-_STICKY_SHADOW_MARGIN = 22
-_STICKY_SHADOW_OFFSET = 8
-_STICKY_SHADOW_BLUR = 10
+# Shadow/tape tuning for the "sticky" demo style. Kept small -- the
+# top-third-only overlay zone is a short band, so several notes need to
+# fit in it at once without towering over it.
+_STICKY_SHADOW_MARGIN = 14
+_STICKY_SHADOW_OFFSET = 5
+_STICKY_SHADOW_BLUR = 6
 _STICKY_SHADOW_COLOR = (20, 16, 12, 75)
 
 # A default hand-placed tilt per overlay index, used when an overlay
@@ -348,17 +364,17 @@ def render_sticky_note(text, style_name, max_width_px, rotation=0.0):
     type with "style": "sticky"."""
     style = STYLES.get(style_name, STYLES["sticky"])
     font = load_hand_font(style["font_size"])
-    pad = 44
+    pad = 22
 
-    usable_w = max(80, min(max_width_px, 460) - 2 * pad)
+    usable_w = max(80, min(max_width_px, 280) - 2 * pad)
     lines = _wrap_text(text, font, usable_w)
 
     ascent, descent = font.getmetrics()
     line_h = ascent + descent + 4
     max_line_w = max(font.getlength(line) for line in lines)
 
-    note_w = int(max(max_line_w + 2 * pad, 240))
-    note_h = int(max(line_h * len(lines) + 2 * pad, note_w * 0.85))
+    note_w = int(max(max_line_w + 2 * pad, 160))
+    note_h = int(max(line_h * len(lines) + 2 * pad, note_w * 0.62))
 
     m = _STICKY_SHADOW_MARGIN
     canvas_w = note_w + m * 2
@@ -376,7 +392,7 @@ def render_sticky_note(text, style_name, max_width_px, rotation=0.0):
 
     # Lifted corner -- a small darker triangle peeling off the bottom-right,
     # with a thin bright fold-line, so it doesn't read as a flat sticker.
-    peel = 30
+    peel = 16
     x0, y0 = m + note_w, m + note_h
     peel_shade = tuple(max(0, c - 45) for c in paper[:3]) + (255,)
     draw.polygon([(x0 - peel, y0), (x0, y0), (x0, y0 - peel)], fill=peel_shade)
@@ -384,7 +400,7 @@ def render_sticky_note(text, style_name, max_width_px, rotation=0.0):
 
     # A strip of masking tape across the top, tilted a few degrees off the
     # note itself.
-    tape_w, tape_h = int(note_w * 0.42), 34
+    tape_w, tape_h = int(note_w * 0.42), 20
     tape = Image.new("RGBA", (tape_w, tape_h), style.get("tape_color", _alpha(CREAM, 210)))
     tape = tape.rotate(-3, expand=True, resample=Image.BICUBIC)
     tape_cx, tape_cy = m + note_w / 2, m
@@ -512,20 +528,25 @@ def render_circle(size, color):
 
 
 def render_safe_zone_guide(mila_position):
+    """Debug overlay for --debug-safe-zones. Shows the top-10% platform-UI
+    band plus the hard line at the bottom of the top third: overlays only
+    ever appear above that line; everything below it (where mila_position
+    puts the presenter) is off-limits to every overlay type."""
     img = Image.new("RGBA", (WIDTH, HEIGHT), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     top_h = int(HEIGHT * TOP_SAFE)
-    bottom_y = int(HEIGHT * BOTTOM_SAFE)
+    overlay_zone_bottom = int(HEIGHT * TOP_THIRD)
     d.rectangle([0, 0, WIDTH, top_h], fill=(200, 40, 40, 70))
-    d.rectangle([0, bottom_y, WIDTH, HEIGHT], fill=(200, 40, 40, 70))
+    d.rectangle([0, overlay_zone_bottom, WIDTH, HEIGHT], fill=(200, 40, 40, 70))
 
-    center_top = int(HEIGHT * (0.34 if "lower" in (mila_position or "") else 0.28))
     center_bottom = int(HEIGHT * 0.78)
-    d.rectangle([int(WIDTH * 0.2), center_top, int(WIDTH * 0.8), center_bottom],
+    d.rectangle([int(WIDTH * 0.2), overlay_zone_bottom, int(WIDTH * 0.8), center_bottom],
                 outline=(60, 90, 160, 220), width=6)
 
-    d.text((16, top_h + 10), "SAFE ZONE GUIDE (debug)", font=load_font(28, "SemiBold"),
+    d.text((16, top_h + 10), "OVERLAY ZONE (debug)", font=load_font(28, "SemiBold"),
             fill=(255, 255, 255, 230))
+    d.text((16, overlay_zone_bottom + 10), "NO OVERLAYS BELOW THIS LINE (debug)",
+            font=load_font(26, "SemiBold"), fill=(255, 255, 255, 230))
     return img
 
 

@@ -92,14 +92,17 @@ field reference: `projects/README.md`.
 
 ### Safe zones (built in)
 
-Plain captions (`text` / `teaser` overlays) are always **centred** and
-confined to the **top third** of the frame — they never land in the top
-10% (platform UI) or drop down over your face/body in the middle/lower
-frame. The `"position"` field is accepted for these but doesn't change
-their placement; it's still used for `image`/`screenshot`/`rect`/`arrow`/
-`circle` overlays, where `upper_center`, `upper_left`, `upper_right`,
-`left_side`, or `right_side` keep them around your head/shoulders and out
-of the centre. Preview the safe zones before recording:
+**Every overlay of every type is confined to the top third of the
+frame — no exceptions.** You occupy the middle and lower two-thirds, so
+nothing is ever allowed to land there, regardless of `"position"` or
+overlay type. Plain captions (`text` / `teaser`) are always **centred**
+within that top third; `"position"` is accepted for these but doesn't
+change their placement. For `image`/`screenshot`/`rect`/`arrow`/`circle`
+overlays, `"position"` still controls left/centre/right placement (and,
+within that, `upper_left` / `left_side` / `lower_left` etc. are now rows
+*within* the top third, not regions of the whole frame) — but the vertical
+range for any position is always clamped to the top third. Preview the
+safe zones before recording:
 
 ```bash
 python3 generate_background.py projects/video-001.json --debug-safe-zones
@@ -127,12 +130,13 @@ Animations: `none` (default — pops on/off screen instantly), `fade`, `slide`, 
 ### Bonus: one-off styles (use sparingly)
 
 Beyond the two production looks above, `"style": "sticky"` (on a `rect`
-overlay with `"text"`) renders a handwritten word on a taped, torn-corner
-paper square — for a single deliberate beat, not a default look. See
-`projects/demo-sticky-notes.json` / `outputs/demo-sticky-notes.mp4` for a
-"list builds up one word at a time" example: three sticky notes appear in
-sequence (13s, 15s, 17s) and stay on screen, stacked down the left edge,
-timed to when each word is spoken.
+overlay with `"text"`) renders a small handwritten word on a taped,
+torn-corner paper square — for a single deliberate beat, not a default
+look. See `projects/demo-sticky-notes.json` /
+`outputs/demo-sticky-notes.mp4` for a "list builds up one word at a time"
+example: three sticky notes appear in sequence (13s, 15s, 17s) and stay on
+screen, left-to-right across the top row, timed to when each word is
+spoken — sized and spaced to fit the top-third-only overlay zone.
 
 ## 4. Run the generator
 
