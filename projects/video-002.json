@@ -1,0 +1,22 @@
+{
+  "duration": 50,
+  "background": "assets/background.png",
+  "output": "outputs/video-002-background.mp4",
+  "mila_position": "center_lower",
+  "overlays": [
+    { "start": 0, "end": 5, "type": "rect", "text": "200 views",
+      "position": "upper_center", "style": "card" },
+
+    { "start": 23, "end": 25, "type": "text", "text": "NOT",
+      "position": "upper_center", "style": "headline" },
+    { "start": 25, "end": 27, "type": "text", "text": "NOT a",
+      "position": "upper_center", "style": "headline" },
+    { "start": 27, "end": 29, "type": "text", "text": "NOT a niche",
+      "position": "upper_center", "style": "headline" },
+    { "start": 29, "end": 37, "type": "text", "text": "NOT a niche problem",
+      "position": "upper_center", "style": "headline" },
+
+    { "start": 44, "end": 50, "type": "teaser", "text": "Next: the exact second",
+      "position": "upper_center", "style": "teaser" }
+  ]
+}
