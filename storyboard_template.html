@@ -37,6 +37,7 @@
       --warn-ink: #1b1916;
       --pending: #7a705f;
       --shadow: none;
+      color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
@@ -52,6 +53,7 @@
     --warn-ink: #1b1916;
     --pending: #7a705f;
     --shadow: none;
+    color-scheme: dark;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; }
@@ -277,8 +279,16 @@ document.getElementById("approveAll").onclick = () => {
   for (const s of Object.values(state.beats)) if (s.status === "pending") s.status = "approved";
   paint();
 };
-document.getElementById("reset").onclick = () => {
-  if (!confirm("Clear every approval and note for this draft?")) return;
+// Two-tap confirm (embedded viewers block confirm()).
+const resetBtn = document.getElementById("reset");
+let resetArmed = null;
+resetBtn.onclick = () => {
+  if (!resetArmed) {
+    resetBtn.textContent = "Tap again to clear all";
+    resetArmed = setTimeout(() => { resetArmed = null; resetBtn.textContent = "Reset"; }, 3000);
+    return;
+  }
+  clearTimeout(resetArmed); resetArmed = null; resetBtn.textContent = "Reset";
   store.clear(); state = fresh(); paint();
 };
 document.getElementById("safeToggle").onchange = e => document.body.classList.toggle("show-safe", e.target.checked);
