@@ -198,6 +198,36 @@ render around too.
 
 **Then:** download the new MP4 from `outputs/` and import it into Edits.
 
+## Storyboard review (approve before export)
+
+Before rendering a final video, build the storyboard dashboard: one frame
+per beat, rendered with the same pipeline as the MP4.
+
+```bash
+python3 storyboard.py projects/video-004.json
+# -> storyboards/video-004-draft1.html
+```
+
+Open the HTML (desktop or phone). For each beat, **Approve** it or
+**Request changes** and write a note. Then press **Send back to Claude**:
+this copies a review summary for you to paste into Claude and lets you
+download `<project>-draft<N>.review.json` (drop it in
+`storyboards/reviews/`). Claude applies the notes, bumps `"draft"`, and
+rebuilds the storyboard. Export happens only once every beat is approved.
+
+Optional overlay fields used only by the dashboard: `"vo"` (the spoken
+line for that beat). Optional project fields: `"title"` and `"draft"`.
+
+### Workflow folders
+
+```
+raw-footage/   # drop rough cuts here
+references/    # 3-5 reels to copy the style of + brand-sheet.md
+storyboards/   # generated review dashboards (+ reviews/ for returned notes)
+exports/       # final approved renders only
+TOOLS.md       # every tool the editor uses, installed + tested
+```
+
 ## Demo included
 
 This repo ships a working demo matching this script:
@@ -219,6 +249,8 @@ upload your real footage).
 
 ```
 generate_background.py   # the generator (run this)
+storyboard.py            # builds the beat-by-beat review dashboard
+storyboard_template.html # dashboard page template
 duplicate_project.py     # copy a project to start a new video
 edit_project.py          # quick CLI edits to a project JSON
 example_input.json       # standalone quick-start example

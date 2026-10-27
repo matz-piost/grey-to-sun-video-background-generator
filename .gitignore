@@ -1,2 +1,6 @@
 __pycache__/
 *.pyc
+raw-footage/*.mp4
+raw-footage/*.mov
+references/*.mp4
+references/*.mov

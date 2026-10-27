@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Storyboard Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5efe6;
+    --surface: #fffaf2;
+    --surface-2: #efe6d6;
+    --ink: #2b2b2b;
+    --ink-soft: #6b6259;
+    --line: #e2d6c2;
+    --accent: #8a9a6b;      /* olive: approved */
+    --accent-ink: #ffffff;
+    --warn: #c0654a;        /* terracotta: changes */
+    --warn-ink: #ffffff;
+    --pending: #b8a98f;
+    --safe: rgba(192, 101, 74, 0.28);
+    --shadow: 0 1px 2px rgba(43, 32, 20, .06), 0 6px 20px rgba(43, 32, 20, .06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1b1916;
+      --surface: #24211d;
+      --surface-2: #2e2a24;
+      --ink: #f2ebe0;
+      --ink-soft: #b3a998;
+      --line: #3a352e;
+      --accent: #a3b583;
+      --accent-ink: #1b1916;
+      --warn: #e08a6e;
+      --warn-ink: #1b1916;
+      --pending: #7a705f;
+      --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1b1916;
+    --surface: #24211d;
+    --surface-2: #2e2a24;
+    --ink: #f2ebe0;
+    --ink-soft: #b3a998;
+    --line: #3a352e;
+    --accent: #a3b583;
+    --accent-ink: #1b1916;
+    --warn: #e08a6e;
+    --warn-ink: #1b1916;
+    --pending: #7a705f;
+    --shadow: none;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.5 Inter, system-ui, -apple-system, sans-serif;
+    padding-bottom: 96px;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
+
+  header { padding: 32px 0 20px; }
+  .eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
+  h1 { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: clamp(28px, 5vw, 40px); line-height: 1.1; margin: 6px 0 10px; }
+  .meta { color: var(--ink-soft); font-size: 14px; }
+  .meta code { font-size: 13px; }
+
+  .progress { margin: 20px 0 8px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .bar { flex: 1 1 200px; height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; display: flex; }
+  .bar span { display: block; height: 100%; transition: width .2s; }
+  .bar .a { background: var(--accent); }
+  .bar .c { background: var(--warn); }
+  .counts { font-size: 14px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 12px 0 24px; }
+  button {
+    font: inherit; font-size: 14px; font-weight: 500;
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+    padding: 8px 14px; border-radius: 10px; cursor: pointer;
+  }
+  button:hover { border-color: var(--ink-soft); }
+  button:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--ink-soft); margin-left: auto; cursor: pointer; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+  .beat {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column;
+    border-top: 4px solid var(--pending);
+  }
+  .beat[data-status="approved"] { border-top-color: var(--accent); }
+  .beat[data-status="changes"] { border-top-color: var(--warn); }
+
+  .thumb { position: relative; aspect-ratio: 9 / 16; background: var(--surface-2); }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .safe { display: none; position: absolute; inset: 0; pointer-events: none; }
+  body.show-safe .safe { display: block; }
+  .safe .ui { position: absolute; left: 0; right: 0; top: 0; height: 10%; background: var(--safe); }
+  .safe .third { position: absolute; left: 0; right: 0; top: 33.333%; border-top: 2px dashed var(--warn); }
+  .safe .label { position: absolute; right: 6px; top: calc(33.333% + 4px); font-size: 10px; color: #fff; background: rgba(0,0,0,.45); padding: 1px 5px; border-radius: 4px; }
+  .badge {
+    position: absolute; left: 10px; top: 10px; background: rgba(20,16,12,.62); color: #fff;
+    font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 99px; font-variant-numeric: tabular-nums;
+  }
+
+  .body { padding: 14px 14px 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .kind { font-size: 12px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .06em; }
+  .status { font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+  .beat[data-status="approved"] .status { color: var(--accent); }
+  .beat[data-status="changes"] .status { color: var(--warn); }
+  .onscreen { font-family: Fraunces, Georgia, serif; font-size: 19px; font-weight: 600; line-height: 1.25; margin: 0; }
+  .vo { font-size: 13px; color: var(--ink-soft); margin: 0; border-left: 2px solid var(--line); padding-left: 10px; }
+  .vo:empty { display: none; }
+
+  .actions { display: flex; gap: 8px; margin-top: auto; }
+  .actions button { flex: 1; }
+  .beat[data-status="approved"] .approve { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .beat[data-status="changes"] .changes { background: var(--warn); color: var(--warn-ink); border-color: var(--warn); }
+  textarea {
+    width: 100%; min-height: 64px; resize: vertical; font: inherit; font-size: 14px;
+    color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px;
+  }
+
+  .overall { margin: 32px 0 0; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+  .overall h2 { font-family: Fraunces, Georgia, serif; font-size: 20px; font-weight: 600; margin: 0 0 8px; }
+
+  .dock {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    backdrop-filter: blur(8px); border-top: 1px solid var(--line);
+  }
+  .dock .wrap { display: flex; gap: 12px; align-items: center; padding-top: 12px; padding-bottom: 12px; }
+  .dock .msg { flex: 1; font-size: 14px; color: var(--ink-soft); min-width: 0; }
+  .primary { background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 600; padding: 10px 18px; white-space: nowrap; }
+  .primary:hover { border-color: var(--ink); opacity: .9; }
+
+  dialog { border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); width: min(640px, calc(100vw - 32px)); padding: 20px; }
+  dialog::backdrop { background: rgba(0,0,0,.4); }
+  dialog h2 { font-family: Fraunces, Georgia, serif; margin: 0 0 6px; font-size: 22px; }
+  dialog textarea { min-height: 260px; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; }
+  dialog .row { margin-top: 12px; justify-content: flex-end; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Storyboard review</div>
+    <h1 id="title"></h1>
+    <div class="meta" id="meta"></div>
+    <div class="progress">
+      <div class="bar" aria-hidden="true"><span class="a" id="barA"></span><span class="c" id="barC"></span></div>
+      <div class="counts" id="counts"></div>
+    </div>
+    <div class="toolbar">
+      <button type="button" id="approveAll">Approve all remaining</button>
+      <button type="button" id="reset">Reset</button>
+      <label class="toggle"><input type="checkbox" id="safeToggle"> Show safe zones</label>
+    </div>
+  </header>
+
+  <main class="grid" id="grid"></main>
+
+  <section class="overall">
+    <h2>Notes on the whole video</h2>
+    <textarea id="overallNote" placeholder="Pacing, music, anything that isn't about one beat…"></textarea>
+  </section>
+</div>
+
+<div class="dock">
+  <div class="wrap">
+    <div class="msg" id="dockMsg"></div>
+    <button type="button" class="primary" id="send">Send back to Claude</button>
+  </div>
+</div>
+
+<dialog id="dlg">
+  <h2 id="dlgTitle">Review ready</h2>
+  <p class="meta" id="dlgHint"></p>
+  <textarea id="dlgText" readonly></textarea>
+  <div class="row">
+    <button type="button" id="dlgCopy">Copy</button>
+    <button type="button" id="dlgJson">Download .review.json</button>
+    <button type="button" class="primary" id="dlgClose">Done</button>
+  </div>
+</dialog>
+
+<script>
+const DATA = __STORYBOARD_DATA__;
+const KEY = `storyboard:${DATA.name}:draft${DATA.draft}`;
+
+const store = {
+  load() { try { return JSON.parse(localStorage.getItem(KEY)) || null; } catch { return null; } },
+  save(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch {} },
+  clear() { try { localStorage.removeItem(KEY); } catch {} },
+};
+
+const fresh = () => ({ beats: Object.fromEntries(DATA.beats.map(b => [b.overlay, { status: "pending", note: "" }])), overall: "" });
+let state = store.load() || fresh();
+for (const b of DATA.beats) state.beats[b.overlay] ??= { status: "pending", note: "" };
+
+const fmt = s => { const m = Math.floor(s / 60), r = s - m * 60; return `${m}:${String(Math.floor(r)).padStart(2, "0")}${r % 1 ? "." + Math.round((r % 1) * 10) : ""}`; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const STATUS_LABEL = { pending: "Not reviewed", approved: "Approved", changes: "Changes requested" };
+
+document.title = `${DATA.title} — Storyboard`;
+document.getElementById("title").textContent = DATA.title;
+document.getElementById("meta").innerHTML =
+  `Draft ${DATA.draft} · ${DATA.beats.length} beats · ${fmt(DATA.duration)} · <code>${esc(DATA.project)}</code> · built ${esc(DATA.generated_at)}`;
+
+const grid = document.getElementById("grid");
+grid.innerHTML = DATA.beats.map((b, i) => `
+  <article class="beat" data-id="${b.overlay}">
+    <div class="thumb">
+      <img src="${b.thumb}" alt="Frame at ${fmt((b.start + b.end) / 2)}: ${esc(b.text)}" loading="lazy">
+      <div class="safe"><div class="ui"></div><div class="third"></div><div class="label">overlays stay above</div></div>
+      <div class="badge">${i + 1} · ${fmt(b.start)}–${fmt(b.end)}</div>
+    </div>
+    <div class="body">
+      <div class="row"><span class="kind">${esc(b.type)}${b.style ? " · " + esc(b.style) : ""} · #${b.overlay}</span><span class="status"></span></div>
+      <p class="onscreen">${esc(b.text)}</p>
+      <p class="vo">${esc(b.vo)}</p>
+      <div class="actions">
+        <button type="button" class="approve">Approve</button>
+        <button type="button" class="changes">Request changes</button>
+      </div>
+      <textarea placeholder="Notes for this beat (wording, timing, style)…"></textarea>
+    </div>
+  </article>`).join("");
+
+function paint() {
+  let a = 0, c = 0;
+  for (const el of grid.children) {
+    const s = state.beats[el.dataset.id];
+    el.dataset.status = s.status;
+    el.querySelector(".status").textContent = STATUS_LABEL[s.status];
+    const ta = el.querySelector("textarea");
+    if (document.activeElement !== ta) ta.value = s.note;
+    if (s.status === "approved") a++; else if (s.status === "changes") c++;
+  }
+  const n = DATA.beats.length, p = n - a - c;
+  document.getElementById("barA").style.width = `${(a / n) * 100}%`;
+  document.getElementById("barC").style.width = `${(c / n) * 100}%`;
+  document.getElementById("counts").textContent = `${a} approved · ${c} changes · ${p} to review`;
+  document.getElementById("dockMsg").textContent =
+    a === n ? "Every beat approved — Claude can export." :
+    p ? `${p} beat${p > 1 ? "s" : ""} still to review.` :
+    `${c} beat${c > 1 ? "s" : ""} need changes — send back for draft ${DATA.draft + 1}.`;
+  document.getElementById("overallNote").value = state.overall;
+  store.save(state);
+}
+
+grid.addEventListener("click", e => {
+  const card = e.target.closest(".beat");
+  if (!card) return;
+  const s = state.beats[card.dataset.id];
+  if (e.target.closest(".approve")) s.status = s.status === "approved" ? "pending" : "approved";
+  else if (e.target.closest(".changes")) {
+    s.status = s.status === "changes" ? "pending" : "changes";
+    if (s.status === "changes") card.querySelector("textarea").focus();
+  } else return;
+  paint();
+});
+grid.addEventListener("input", e => {
+  if (!e.target.matches("textarea")) return;
+  const s = state.beats[e.target.closest(".beat").dataset.id];
+  s.note = e.target.value;
+  if (s.note.trim() && s.status !== "changes") s.status = "changes";
+  paint();
+});
+document.getElementById("overallNote").addEventListener("input", e => { state.overall = e.target.value; store.save(state); });
+document.getElementById("approveAll").onclick = () => {
+  for (const s of Object.values(state.beats)) if (s.status === "pending") s.status = "approved";
+  paint();
+};
+document.getElementById("reset").onclick = () => {
+  if (!confirm("Clear every approval and note for this draft?")) return;
+  store.clear(); state = fresh(); paint();
+};
+document.getElementById("safeToggle").onchange = e => document.body.classList.toggle("show-safe", e.target.checked);
+
+function review() {
+  return {
+    project: DATA.project,
+    draft: DATA.draft,
+    reviewed_at: new Date().toISOString(),
+    all_approved: DATA.beats.every(b => state.beats[b.overlay].status === "approved"),
+    overall_note: state.overall.trim(),
+    beats: DATA.beats.map((b, i) => ({
+      beat: i + 1, overlay: b.overlay, start: b.start, end: b.end, text: b.text,
+      status: state.beats[b.overlay].status, note: state.beats[b.overlay].note.trim(),
+    })),
+  };
+}
+
+function summary(r) {
+  const lines = [`Storyboard review — ${r.project} — draft ${r.draft}`, ""];
+  if (r.all_approved) lines.push("All beats approved. Please export the final video.");
+  const approved = r.beats.filter(b => b.status === "approved").map(b => b.beat);
+  const changes = r.beats.filter(b => b.status === "changes");
+  const pending = r.beats.filter(b => b.status === "pending").map(b => b.beat);
+  if (!r.all_approved) {
+    if (approved.length) lines.push(`Approved beats: ${approved.join(", ")}`);
+    if (changes.length) {
+      lines.push("", "Changes requested:");
+      for (const b of changes) lines.push(`- Beat ${b.beat} (overlay #${b.overlay}, ${fmt(b.start)}–${fmt(b.end)}, "${b.text}"): ${b.note || "(no note)"}`);
+    }
+    if (pending.length) lines.push("", `Not reviewed yet: ${pending.join(", ")}`);
+    lines.push("", `Apply the notes, bump "draft" to ${r.draft + 1}, and rebuild the storyboard. Don't export yet.`);
+  }
+  if (r.overall_note) lines.push("", `Overall notes: ${r.overall_note}`);
+  return lines.join("\n");
+}
+
+const dlg = document.getElementById("dlg");
+document.getElementById("send").onclick = async () => {
+  const r = review(), text = summary(r);
+  document.getElementById("dlgText").value = text;
+  document.getElementById("dlgTitle").textContent = r.all_approved ? "Approved — ready to export" : `Notes for draft ${r.draft + 1}`;
+  let copied = false;
+  try { await navigator.clipboard.writeText(text); copied = true; } catch {}
+  document.getElementById("dlgHint").textContent = copied
+    ? "Copied to your clipboard. Paste it into Claude, or download the .review.json and drop it in storyboards/reviews/."
+    : "Copy this and paste it into Claude, or download the .review.json and drop it in storyboards/reviews/.";
+  dlg.showModal();
+};
+document.getElementById("dlgCopy").onclick = async () => {
+  const ta = document.getElementById("dlgText");
+  try { await navigator.clipboard.writeText(ta.value); } catch { ta.select(); document.execCommand("copy"); }
+};
+document.getElementById("dlgJson").onclick = () => {
+  const blob = new Blob([JSON.stringify(review(), null, 2)], { type: "application/json" });
+  const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `${DATA.name}-draft${DATA.draft}.review.json` });
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+document.getElementById("dlgClose").onclick = () => dlg.close();
+
+paint();
+</script>
+</body>
+</html>

@@ -20,3 +20,12 @@ this same top-third clamp. Don't add a position or style that places
 content in the middle/lower frame — check with
 `python3 generate_background.py <project> --debug-safe-zones` before
 calling any new placement "done".
+
+## Storyboard before export
+
+Never render a final export until the storyboard is approved. After any
+edit to a project: run `python3 storyboard.py <project>`, share the
+dashboard, and wait for the review. When a review comes back (pasted
+summary or `storyboards/reviews/*.review.json`), apply each beat's note to
+the overlay number it names, bump `"draft"`, and rebuild the storyboard.
+Only when every beat is approved, render the MP4 into `exports/`.
